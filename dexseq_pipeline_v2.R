@@ -199,7 +199,26 @@ for (condition in list.conditions) {
     write.csv(x = res.clean,
               file=paste(loc.dexseq.folder, "/", code, "_", loc.code, "_SignificantExons.csv", sep = ''),
               row.names = FALSE)
-    
+    if (cryptic) {
+        res.clean.cryptics <- subset(res.clean,res.clean$FDR < 0.01 & grepl("i",res.clean$exonID))
+        res.clean.cryptics.up <- subset(res.clean.cryptics, res.clean.cryptics$log2FoldChange > 0)
+        res.clean.cryptics.down <- subset(res.clean.cryptics, res.clean.cryptics$log2FoldChange < 0)
+        res.clean.cryptics.NA <- subset(res.clean.cryptics, is.na(res.clean.cryptics$log2FoldChange))
+        write.table(x = res.clean.cryptics,
+             file=paste(loc.dexseq.folder, "/", code, "_", loc.code, "_CrypticExons.tab", sep = ''),
+              row.names = FALSE)
+        codes <- c("Significant Cryptic events (FDR < 0.01):", "Up-going:", "Down-going:", "NA (possible error):")
+        counts <- c(dim(res.clean.cryptics)[1], dim(res.clean.cryptics.up)[1], dim(res.clean.cryptics.down)[1], dim(res.clean.cryptics.NA)[1] ) 
+        report <- data.frame(codes,counts)
+        write.table(x = report,
+            file=paste0(loc.dexseq.folder, "/", code, "_", loc.code, "Cryptic_Report.tab"),
+            row.names = F, quote = F)
+        write.table(x = res.clean.cryptics.up[,c(10:12,1,3)],
+            file=paste0(loc.dexseq.folder, "/", code, "_", loc.code, "Cryptics_UP.bed"),
+            quote=F, row.names=F, col.names=F, sep="\t")
+        write.table(x = res.clean.cryptics.down[,c(10:12,1,3)],
+            file=paste0(loc.dexseq.folder, "/", code, "_", loc.code, "Cryptics_DOWN.bed"),
+            quote=F, row.names=F, col.names=F, sep="\t")    
     message('Saving results in ', dexseq.data)
     save(list = c('res.clean', 'DexSeqExons.loc'), file = dexseq.data)
   } else {
@@ -209,11 +228,11 @@ for (condition in list.conditions) {
 
 ########################## Now plot a subset
   file.remove(list.files(dexseq.figs, pattern = 'DEXSeq*', full.names = TRUE)) ##remove the old plots
-
+#Altered so only plots significant CRYPTIC events
   n.sig <- sum(res.clean$FDR < 0.01, na.rm = TRUE)
   if (n.sig <= 50) {
-    res.cleanSigs <- subset(res.clean, FDR<0.01)
-  } else res.cleanSigs <- res.clean[1:50,]
+    res.cleanSigs <- subset(res.clean, FDR<0.01 & grepl("i",res.clean$exonID))
+  } else res.cleanSigs <- subset(res.clean, grepl("i",res.clean$exonID))[1:50,]
 
 
   genes.to.plot <- unique(res.cleanSigs$EnsemblID)
