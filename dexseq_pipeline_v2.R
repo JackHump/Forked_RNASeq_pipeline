@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+options(echo=T) 
+
 library(DEXSeq)
 library(BiocParallel)
 library(optparse)
